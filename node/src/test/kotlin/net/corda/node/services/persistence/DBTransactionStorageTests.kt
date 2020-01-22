@@ -6,6 +6,7 @@ import net.corda.core.crypto.Crypto
 import net.corda.core.crypto.SecureHash
 import net.corda.core.crypto.SignatureMetadata
 import net.corda.core.crypto.TransactionSignature
+import net.corda.core.serialization.serialize
 import net.corda.core.toFuture
 import net.corda.core.transactions.SignedTransaction
 import net.corda.node.services.transactions.PersistentUniquenessProvider
@@ -61,7 +62,7 @@ class DBTransactionStorageTests {
         override fun instant(): Instant = timeNow
     }
 
-    @Test
+    @Test(timeout=300_000)
     fun `create verified transaction and validate timestamp in db`() {
         val now = Instant.ofEpochSecond(111222333L)
         val transactionClock = TransactionClock(now)
@@ -71,18 +72,20 @@ class DBTransactionStorageTests {
         assertEquals(now, readTransactionTimestampFromDB(transaction.id))
     }
 
-    @Test
-    fun `create unverified transaction and validate timestamp in db`() {
+    @Test(timeout=300_000)
+fun `create unverified transaction and validate timestamp in db`() {
         val now = Instant.ofEpochSecond(333444555L)
         val transactionClock = TransactionClock(now)
         newTransactionStorage(clock = transactionClock)
         val transaction = newTransaction()
         transactionStorage.addUnverifiedTransaction(transaction)
         assertEquals(now, readTransactionTimestampFromDB(transaction.id))
+
+        "mnyString".serialize(context = MyContext())
     }
 
-    @Test
-    fun `create unverified then verified transaction and validate timestamps in db`() {
+    @Test(timeout=300_000)
+fun `create unverified then verified transaction and validate timestamps in db`() {
         val unverifiedTime = Instant.ofEpochSecond(555666777L)
         val verifiedTime = Instant.ofEpochSecond(888999111L)
         val transactionClock = TransactionClock(unverifiedTime)
@@ -95,8 +98,8 @@ class DBTransactionStorageTests {
         assertEquals(verifiedTime, readTransactionTimestampFromDB(transaction.id))
     }
 
-    @Test
-    fun `check timestamp does not change when attempting to move transaction from verified to unverified`() {
+    @Test(timeout=300_000)
+fun `check timestamp does not change when attempting to move transaction from verified to unverified`() {
 
         val verifiedTime = Instant.ofEpochSecond(555666222L)
         val differentTime = Instant.ofEpochSecond(888777666L)
@@ -116,8 +119,8 @@ class DBTransactionStorageTests {
         assertEquals(verifiedTime, readTransactionTimestampFromDB(transaction.id))
     }
 
-    @Test
-    fun `check timestamp does not change when transaction saved twice in same DB transaction scope`() {
+    @Test(timeout=300_000)
+fun `check timestamp does not change when transaction saved twice in same DB transaction scope`() {
         val verifiedTime = Instant.ofEpochSecond(3333666222L)
         val differentTime = Instant.ofEpochSecond(111777666L)
         val transactionClock = TransactionClock(verifiedTime)
@@ -133,8 +136,8 @@ class DBTransactionStorageTests {
         assertEquals(verifiedTime, readTransactionTimestampFromDB(firstTransaction.id))
     }
 
-    @Test
-    fun `check timestamp does not change when transaction saved twice in two DB transaction scopes`() {
+    @Test(timeout=300_000)
+fun `check timestamp does not change when transaction saved twice in two DB transaction scopes`() {
         val verifiedTime = Instant.ofEpochSecond(11119999222L)
         val differentTime = Instant.ofEpochSecond(666333222L)
         val transactionClock = TransactionClock(verifiedTime)
@@ -166,16 +169,16 @@ class DBTransactionStorageTests {
         return fromDb[0].timestamp
     }
 
-    @Test
-    fun `empty store`() {
+    @Test(timeout=300_000)
+fun `empty store`() {
         assertThat(transactionStorage.getTransaction(newTransaction().id)).isNull()
         assertThat(transactionStorage.transactions).isEmpty()
         newTransactionStorage()
         assertThat(transactionStorage.transactions).isEmpty()
     }
 
-    @Test
-    fun `one transaction`() {
+    @Test(timeout=300_000)
+fun `one transaction`() {
         val transaction = newTransaction()
         transactionStorage.addTransaction(transaction)
         assertTransactionIsRetrievable(transaction)
@@ -185,8 +188,8 @@ class DBTransactionStorageTests {
         assertThat(transactionStorage.transactions).containsExactly(transaction)
     }
 
-    @Test
-    fun `two transactions across restart`() {
+    @Test(timeout=300_000)
+fun `two transactions across restart`() {
         val firstTransaction = newTransaction()
         val secondTransaction = newTransaction()
         transactionStorage.addTransaction(firstTransaction)
@@ -197,8 +200,8 @@ class DBTransactionStorageTests {
         assertThat(transactionStorage.transactions).containsOnly(firstTransaction, secondTransaction)
     }
 
-    @Test
-    fun `two transactions with rollback`() {
+    @Test(timeout=300_000)
+fun `two transactions with rollback`() {
         val firstTransaction = newTransaction()
         val secondTransaction = newTransaction()
         database.transaction {
@@ -210,8 +213,8 @@ class DBTransactionStorageTests {
         assertThat(transactionStorage.transactions).isEmpty()
     }
 
-    @Test
-    fun `two transactions in same DB transaction scope`() {
+    @Test(timeout=300_000)
+fun `two transactions in same DB transaction scope`() {
         val firstTransaction = newTransaction()
         val secondTransaction = newTransaction()
         transactionStorage.addTransaction(firstTransaction)
@@ -221,8 +224,8 @@ class DBTransactionStorageTests {
         assertThat(transactionStorage.transactions).containsOnly(firstTransaction, secondTransaction)
     }
 
-    @Test
-    fun `transaction saved twice in same DB transaction scope`() {
+    @Test(timeout=300_000)
+fun `transaction saved twice in same DB transaction scope`() {
         val firstTransaction = newTransaction()
         database.transaction {
             transactionStorage.addTransaction(firstTransaction)
@@ -232,8 +235,8 @@ class DBTransactionStorageTests {
         assertThat(transactionStorage.transactions).containsOnly(firstTransaction)
     }
 
-    @Test
-    fun `transaction saved twice in two DB transaction scopes`() {
+    @Test(timeout=300_000)
+fun `transaction saved twice in two DB transaction scopes`() {
         val firstTransaction = newTransaction()
         val secondTransaction = newTransaction()
 
@@ -247,8 +250,8 @@ class DBTransactionStorageTests {
         assertThat(transactionStorage.transactions).containsOnly(firstTransaction, secondTransaction)
     }
 
-    @Test
-    fun `updates are fired`() {
+    @Test(timeout=300_000)
+fun `updates are fired`() {
         val future = transactionStorage.updates.toFuture()
         val expected = newTransaction()
         transactionStorage.addTransaction(expected)
@@ -256,8 +259,8 @@ class DBTransactionStorageTests {
         assertEquals(expected, actual)
     }
 
-    @Test
-    fun `duplicates are detected when transaction is evicted from cache`() {
+    @Test(timeout=300_000)
+fun `duplicates are detected when transaction is evicted from cache`() {
         newTransactionStorage(cacheSizeBytesOverride = 0)
         val transaction = newTransaction()
         database.transaction {
@@ -269,8 +272,8 @@ class DBTransactionStorageTests {
         }
     }
 
-    @Test
-    fun `unverified transaction is correctly added in add transaction`() {
+    @Test(timeout=300_000)
+fun `unverified transaction is correctly added in add transaction`() {
         val transaction = newTransaction()
         val added = database.transaction {
             transactionStorage.addUnverifiedTransaction(transaction)
@@ -292,8 +295,8 @@ class DBTransactionStorageTests {
         assertTrue(secondAdded)
     }
 
-    @Test
-    fun `cannot move transaction from verified to unverified`() {
+    @Test(timeout=300_000)
+fun `cannot move transaction from verified to unverified`() {
         val transaction = newTransaction()
         database.transaction {
             transactionStorage.addTransaction(transaction)

@@ -22,14 +22,14 @@ class CordaPersistenceTest {
         database.close()
     }
 
-    @Test
+    @Test(timeout=300_000)
     fun `onAllOpenTransactionsClosed with zero transactions calls back immediately`() {
         val counter = AtomicInteger(0)
         database.onAllOpenTransactionsClosed { counter.incrementAndGet() }
         assertEquals(1, counter.get())
     }
 
-    @Test
+    @Test(timeout=300_000)
     fun `onAllOpenTransactionsClosed with one transaction calls back after closing`() {
         val counter = AtomicInteger(0)
         database.transaction {
@@ -39,7 +39,7 @@ class CordaPersistenceTest {
         assertEquals(1, counter.get())
     }
 
-    @Test
+    @Test(timeout=300_000)
     fun `onAllOpenTransactionsClosed after one transaction has closed calls back immediately`() {
         val counter = AtomicInteger(0)
         database.transaction {
@@ -51,7 +51,7 @@ class CordaPersistenceTest {
         assertEquals(2, counter.get())
     }
 
-    @Test
+    @Test(timeout=300_000)
     fun `onAllOpenTransactionsClosed with two transactions calls back after closing both`() {
         val counter = AtomicInteger(0)
         val phaser = openTransactionInOtherThreadAndCloseWhenISay()
@@ -67,7 +67,7 @@ class CordaPersistenceTest {
         assertEquals(1, counter.get())
     }
 
-    @Test
+    @Test(timeout = 10_000)
     fun `onAllOpenTransactionsClosed with two transactions calls back after closing both - instigator closes last`() {
         val counter = AtomicInteger(0)
         val phaser = openTransactionInOtherThreadAndCloseWhenISay()
