@@ -191,7 +191,7 @@ class CordaRPCClientReconnectionTest {
         }
     }
 
-    @Test
+    @Test(timeout = 60_000)
     fun `establishing an RPC connection fails if there is no node listening to the specified address`() {
         rpcDriver {
             assertThatThrownBy {
