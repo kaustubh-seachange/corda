@@ -362,7 +362,7 @@ A more graceful form of reconnection is also available. This will:
 
 - reconnect any existing ``Observable``\s after a reconnection, so that they keep emitting events to the existing subscriptions.
 - block any RPC calls that arrive during a reconnection or any RPC calls that were not acknowledged at the point of reconnection and will execute them after the connection is re-established.
-- by default the rpc will continue retrying until the connection is re-established.  See ``CordaRPCClientConfiguration`` for adjusting the number of retries.
+- by default continue retrying indefinitely until the connection is re-established.  See ``CordaRPCClientConfiguration.maxReconnectAttempts`` for adjusting the number of retries.
 
 More specifically, the behaviour in the second case is a bit more subtle:
 

@@ -244,7 +244,7 @@ class RPCClientProxyHandler(
         try {
             sessionFactory = serverLocator.createSessionFactory()
         } catch (e: ActiveMQNotConnectedException) {
-            throw (RPCException("Cannot connect to server(s).", e))
+            throw (RPCException("Cannot connect to server(s). Tried with all available servers.", e))
         }
         // Depending on how the client is constructed, connection failure is treated differently
         if (serverLocator.staticTransportConfigurations.size == 1) {

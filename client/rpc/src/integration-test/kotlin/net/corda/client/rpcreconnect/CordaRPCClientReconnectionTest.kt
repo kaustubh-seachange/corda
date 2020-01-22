@@ -7,7 +7,6 @@ import net.corda.client.rpc.GracefulReconnect
 import net.corda.client.rpc.MaxRpcRetryException
 import net.corda.client.rpc.RPCException
 import net.corda.client.rpc.internal.ReconnectingCordaRPCOps
-import net.corda.core.internal.concurrent.doneFuture
 import net.corda.core.messaging.startTrackedFlow
 import net.corda.core.utilities.NetworkHostAndPort
 import net.corda.core.utilities.OpaqueBytes
@@ -26,10 +25,8 @@ import net.corda.testing.node.internal.FINANCE_CORDAPPS
 import net.corda.testing.node.internal.rpcDriver
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.ClassRule
 import org.junit.Test
 import java.lang.Thread.sleep
-import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -61,7 +58,10 @@ class CordaRPCClientReconnectionTest {
             }
 
             val node = startNode()
-            val client = CordaRPCClient(node.rpcAddress)
+            val client = CordaRPCClient(
+                    node.rpcAddress,
+                    CordaRPCClientConfiguration.DEFAULT.copy(connectionRetryIntervalMultiplier = 1.0)
+            )
 
             (client.start(rpcUser.username, rpcUser.password, gracefulReconnect = gracefulReconnect)).use {
                 val rpcOps = it.proxy as ReconnectingCordaRPCOps
