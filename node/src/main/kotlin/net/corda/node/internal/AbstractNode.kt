@@ -1150,6 +1150,7 @@ abstract class AbstractNode<S>(val configuration: NodeConfiguration,
 
         override fun <T : Any?> withEntityManager(block: EntityManager.() -> T): T {
             return database.transaction {
+                session.flush()
                 block(restrictedEntityManager)
             }
         }
