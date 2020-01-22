@@ -27,6 +27,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import java.lang.Thread.sleep
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -38,6 +39,10 @@ class CordaRPCClientReconnectionTest {
     private val portAllocator = incrementalPortAllocation()
 
     private val gracefulReconnect = GracefulReconnect()
+    private val config = CordaRPCClientConfiguration.DEFAULT.copy(
+            connectionRetryInterval = Duration.ofSeconds(1),
+            connectionRetryIntervalMultiplier = 1.0
+    )
 
     companion object {
         val rpcUser = User("user1", "test", permissions = setOf(Permissions.all()))
@@ -58,10 +63,7 @@ class CordaRPCClientReconnectionTest {
             }
 
             val node = startNode()
-            val client = CordaRPCClient(
-                    node.rpcAddress,
-                    CordaRPCClientConfiguration.DEFAULT.copy(connectionRetryIntervalMultiplier = 1.0)
-            )
+            val client = CordaRPCClient(node.rpcAddress, config)
 
             (client.start(rpcUser.username, rpcUser.password, gracefulReconnect = gracefulReconnect)).use {
                 val rpcOps = it.proxy as ReconnectingCordaRPCOps
@@ -99,7 +101,7 @@ class CordaRPCClientReconnectionTest {
             }
 
             val node = startNode()
-            val client = CordaRPCClient(node.rpcAddress)
+            val client = CordaRPCClient(node.rpcAddress, config)
 
             (client.start(rpcUser.username, rpcUser.password, gracefulReconnect = gracefulReconnect)).use {
                 val rpcOps = it.proxy as ReconnectingCordaRPCOps
@@ -138,7 +140,7 @@ class CordaRPCClientReconnectionTest {
             val addresses = listOf(NetworkHostAndPort("localhost", portAllocator.nextPort()), NetworkHostAndPort("localhost", portAllocator.nextPort()))
 
             val node = startNode(addresses[0])
-            val client = CordaRPCClient(addresses)
+            val client = CordaRPCClient(addresses, config)
 
             (client.start(rpcUser.username, rpcUser.password, gracefulReconnect = gracefulReconnect)).use {
                 val rpcOps = it.proxy as ReconnectingCordaRPCOps
@@ -175,7 +177,7 @@ class CordaRPCClientReconnectionTest {
             }
 
             val node = startNode()
-            val client = CordaRPCClient(node.rpcAddress)
+            val client = CordaRPCClient(node.rpcAddress, config)
 
             (client.start(rpcUser.username, rpcUser.password, gracefulReconnect = GracefulReconnect(maxAttempts = 1))).use {
                 val rpcOps = it.proxy as ReconnectingCordaRPCOps
@@ -193,7 +195,7 @@ class CordaRPCClientReconnectionTest {
     fun `establishing an RPC connection fails if there is no node listening to the specified address`() {
         rpcDriver {
             assertThatThrownBy {
-                CordaRPCClient(NetworkHostAndPort("localhost", portAllocator.nextPort()))
+                CordaRPCClient(NetworkHostAndPort("localhost", portAllocator.nextPort()), config)
                         .start(rpcUser.username, rpcUser.password, GracefulReconnect())
             }.isInstanceOf(RPCException::class.java)
                     .hasMessage("Cannot connect to server(s). Tried with all available servers.")
@@ -213,7 +215,7 @@ class CordaRPCClientReconnectionTest {
             }
 
             val node = startNode()
-            CordaRPCClient(node.rpcAddress).start(rpcUser.username, rpcUser.password, gracefulReconnect).use {
+            CordaRPCClient(node.rpcAddress, config).start(rpcUser.username, rpcUser.password, gracefulReconnect).use {
                 node.stop()
                 thread() {
                     it.proxy.startTrackedFlow(

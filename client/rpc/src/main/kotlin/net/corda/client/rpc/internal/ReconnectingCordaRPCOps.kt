@@ -152,7 +152,7 @@ class ReconnectingCordaRPCOps private constructor(
             @Synchronized get() = when (currentState) {
                 // The first attempt to establish a connection will try every address only once.
                 UNCONNECTED ->
-                    connect() ?: throw IllegalArgumentException("The ReconnectingRPCConnection has been closed.")
+                    connect(nodeHostAndPorts.size) ?: throw IllegalArgumentException("The ReconnectingRPCConnection has been closed.")
                 CONNECTED ->
                     currentRPCConnection!!
                 CLOSED ->
@@ -178,7 +178,7 @@ class ReconnectingCordaRPCOps private constructor(
             //TODO - handle error cases
             log.warn("Reconnecting to ${this.nodeHostAndPorts} due to error: ${e.message}")
             log.debug("", e)
-            connect()
+            connect(rpcConfiguration.maxReconnectAttempts)
             previousConnection?.forceClose()
             gracefulReconnect.onReconnect.invoke()
         }
@@ -190,12 +190,12 @@ class ReconnectingCordaRPCOps private constructor(
             val previousConnection = currentRPCConnection
             doReconnect(e, previousConnection)
         }
-        private fun connect(): CordaRPCConnection? {
+        private fun connect(maxConnectAttempts: Int): CordaRPCConnection? {
             currentState = CONNECTING
             synchronized(this) {
                 currentRPCConnection = establishConnectionWithRetry(
                         rpcConfiguration.connectionRetryInterval,
-                        retries = rpcConfiguration.maxReconnectAttempts
+                        retries = maxConnectAttempts
                 )
                 // It's possible we could get closed while waiting for the connection to establish.
                 if (!isClosed()) {
